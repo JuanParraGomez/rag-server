@@ -7,7 +7,7 @@ from typing import Any
 
 from llama_index.core import VectorStoreIndex
 from llama_index.core.schema import BaseNode, NodeWithScore
-from llama_index.core.vector_stores import FilterCondition, MetadataFilter, MetadataFilters
+from llama_index.core.vector_stores import MetadataFilter, MetadataFilters
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as rest
@@ -157,7 +157,6 @@ class QdrantAdapter(VectorStoreAdapter):
                 MetadataFilter(
                     key=key,
                     value=value,
-                    operator=FilterCondition.EQ,
                 )
             )
 
