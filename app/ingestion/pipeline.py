@@ -6,7 +6,6 @@ from llama_index.core import Document
 from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.schema import BaseNode
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.embeddings.openai import OpenAIEmbedding
 
 from app.config.settings import Settings
@@ -47,4 +46,6 @@ class LlamaIngestionService:
                 api_key=settings.openai_api_key,
             )
 
-        return HuggingFaceEmbedding(model_name=settings.embedding_model_name)
+        raise ValueError(
+            "Only EMBEDDING_PROVIDER=openai is enabled in this deployment profile"
+        )
