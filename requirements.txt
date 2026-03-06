@@ -1,0 +1,12 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+pydantic==2.9.2
+pydantic-settings==2.5.2
+llama-index-core==0.12.24
+llama-index-vector-stores-qdrant==0.4.2
+llama-index-embeddings-huggingface==0.5.1
+qdrant-client==1.13.2
+pypdf==5.3.1
+python-docx==1.1.2
+sentence-transformers==3.4.1
