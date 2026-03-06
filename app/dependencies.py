@@ -9,9 +9,15 @@ from app.vector_store.qdrant_adapter import QdrantAdapter
 
 
 @lru_cache(maxsize=1)
+def get_ingestion_service() -> LlamaIngestionService:
+    settings: Settings = get_settings()
+    return LlamaIngestionService(settings)
+
+
+@lru_cache(maxsize=1)
 def get_vector_store_adapter() -> QdrantAdapter:
     settings = get_settings()
-    ingestion = LlamaIngestionService(settings)
+    ingestion = get_ingestion_service()
     adapter = QdrantAdapter(settings=settings, embed_model=ingestion.embed_model)
     adapter.ensure_collection()
     return adapter
@@ -19,8 +25,7 @@ def get_vector_store_adapter() -> QdrantAdapter:
 
 @lru_cache(maxsize=1)
 def get_document_service() -> DocumentService:
-    settings: Settings = get_settings()
-    ingestion = LlamaIngestionService(settings)
+    ingestion = get_ingestion_service()
     vector_store = get_vector_store_adapter()
     extractor = TextExtractor()
     return DocumentService(extractor=extractor, ingestion=ingestion, vector_store=vector_store)

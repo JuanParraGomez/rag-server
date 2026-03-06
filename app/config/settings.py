@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -17,8 +18,10 @@ class Settings(BaseSettings):
     qdrant_collection: str = Field(default="documents")
     qdrant_api_key: str | None = Field(default=None)
 
-    embedding_model_name: str = Field(default="sentence-transformers/all-MiniLM-L6-v2")
-    embedding_dimension: int = Field(default=384)
+    embedding_provider: Literal["openai", "huggingface"] = Field(default="openai")
+    embedding_model_name: str = Field(default="text-embedding-3-small")
+    embedding_dimension: int = Field(default=1536)
+    openai_api_key: str | None = Field(default=None)
 
     chunk_size: int = Field(default=800)
     chunk_overlap: int = Field(default=120)

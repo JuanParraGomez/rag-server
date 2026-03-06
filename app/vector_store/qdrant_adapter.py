@@ -8,7 +8,6 @@ from typing import Any
 from llama_index.core import VectorStoreIndex
 from llama_index.core.schema import BaseNode, NodeWithScore
 from llama_index.core.vector_stores import FilterCondition, MetadataFilter, MetadataFilters
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as rest
@@ -22,7 +21,7 @@ LOGGER = logging.getLogger(__name__)
 class QdrantAdapter(VectorStoreAdapter):
     RESERVED_FILTER_KEYS = {"top_k", "question"}
 
-    def __init__(self, settings: Settings, embed_model: HuggingFaceEmbedding) -> None:
+    def __init__(self, settings: Settings, embed_model: Any) -> None:
         self._settings = settings
         self._embed_model = embed_model
         self._client = QdrantClient(

@@ -97,6 +97,8 @@ Se persiste como payload en Qdrant y se usa para filtros en query.
 
 ```bash
 cp .env.example .env
+
+# set OPENAI_API_KEY en .env para embeddings OpenAI
 ```
 
 ### 7.2 Levantar servicios
@@ -176,7 +178,7 @@ curl -X DELETE "http://localhost:8000/documents/<document_id>?tenant_id=empresa_
 ## 9. Decisiones técnicas
 
 - **Extracción PDF/DOCX**: `pypdf` y `python-docx` por ser open source, estables y simples.
-- **Embeddings**: `sentence-transformers/all-MiniLM-L6-v2` (open source, liviano, buena latencia/costo).
+- ****Embeddings**: por defecto `text-embedding-3-small` (OpenAI) para mejor precision en busqueda; fallback open source con `EMBEDDING_PROVIDER=huggingface`.
 - **Chunking**: `SentenceSplitter` de LlamaIndex con `chunk_size=800`, `chunk_overlap=120`.
 - **Persistencia de document_id/metadata**: payload en cada chunk de Qdrant (`document_id`, `tenant_id`, tags dinámicos).
 - **Borrado por documento**: `delete` con filtro payload (`tenant_id` + `document_id`) en Qdrant.
