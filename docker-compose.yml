@@ -15,8 +15,12 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      - CANONDOCK_API_BASE_URL=${CANONDOCK_API_BASE_URL:-http://host.docker.internal:8020}
     ports:
       - "8000:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - qdrant
 

@@ -24,11 +24,21 @@ class QdrantAdapter(VectorStoreAdapter):
     def __init__(self, settings: Settings, embed_model: Any) -> None:
         self._settings = settings
         self._embed_model = embed_model
-        self._client = QdrantClient(
-            host=settings.qdrant_host,
-            port=settings.qdrant_port,
-            api_key=settings.qdrant_api_key,
-        )
+        if settings.qdrant_path:
+            self._client = QdrantClient(
+                path=settings.qdrant_path,
+            )
+        elif settings.qdrant_url:
+            self._client = QdrantClient(
+                url=settings.qdrant_url,
+                api_key=settings.qdrant_api_key,
+            )
+        else:
+            self._client = QdrantClient(
+                host=settings.qdrant_host,
+                port=settings.qdrant_port,
+                api_key=settings.qdrant_api_key,
+            )
         self._collection_name = settings.qdrant_collection
         self._vector_store = QdrantVectorStore(
             client=self._client,

@@ -8,6 +8,33 @@ from app.config.settings import Settings
 from app.models.schemas import SourceChunk
 
 TOKEN_RE = re.compile(r"[a-zA-Z0-9_]+")
+STOPWORDS = {
+    "de",
+    "la",
+    "el",
+    "los",
+    "las",
+    "un",
+    "una",
+    "y",
+    "o",
+    "con",
+    "sin",
+    "para",
+    "por",
+    "que",
+    "como",
+    "del",
+    "al",
+    "the",
+    "and",
+    "or",
+    "for",
+    "with",
+    "without",
+    "what",
+    "which",
+}
 FACTOID_HINTS = {
     "cual",
     "cuál",
@@ -75,6 +102,7 @@ class RerankerService:
             # Penalize semantic-only hits when there is no lexical evidence for focused queries.
             if lexical == 0.0 and len(q_tokens) >= 3:
                 rerank_score *= lexical_penalty
+            rerank_score *= self._negation_penalty(q_tokens=q_tokens, text=chunk.text)
             chunk.semantic_score = float(chunk.score)
             chunk.rerank_score = float(rerank_score)
             chunk.score = float(rerank_score)
@@ -85,7 +113,7 @@ class RerankerService:
 
     @staticmethod
     def _tokenize(text: str) -> list[str]:
-        return [t.lower() for t in TOKEN_RE.findall(text or "")]
+        return [t.lower() for t in TOKEN_RE.findall(text or "") if len(t) >= 3 and t.lower() not in STOPWORDS]
 
     def _lexical_overlap(self, query_tokens: set[str], text: str) -> float:
         if not query_tokens:
@@ -120,10 +148,20 @@ class RerankerService:
 
         if is_factoid or strong_filter_count >= 2:
             # More precision-oriented.
-            sem, lex, seq = 0.45, 0.45, 0.10
-            return sem, lex, seq, 0.75
+            sem, lex, seq = 0.30, 0.60, 0.10
+            return sem, lex, seq, 0.35
         if is_exploratory:
             # More semantic breadth for open-ended requests.
             sem, lex, seq = 0.70, 0.20, 0.10
             return sem, lex, seq, 0.9
         return base_sem, base_lex, base_seq, 0.85
+
+    @staticmethod
+    def _negation_penalty(q_tokens: set[str], text: str) -> float:
+        lowered = (text or "").lower()
+        for token in q_tokens:
+            if len(token) < 4:
+                continue
+            if f"no {token}" in lowered or f"not {token}" in lowered:
+                return 0.1
+        return 1.0

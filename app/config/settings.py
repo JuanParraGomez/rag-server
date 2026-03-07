@@ -27,6 +27,9 @@ class Settings(BaseSettings):
 
     chunk_size: int = Field(default=800)
     chunk_overlap: int = Field(default=120)
+    chunking_strategy: Literal["semantic", "sentence"] = Field(default="semantic")
+    semantic_buffer_size: int = Field(default=1)
+    semantic_breakpoint_percentile: int = Field(default=90)
 
     default_top_k: int = Field(default=5)
     max_list_points_scan: int = Field(default=10000)

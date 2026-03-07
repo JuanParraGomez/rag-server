@@ -143,7 +143,11 @@ class CanonicalIngestionService:
         author = self._safe_str(metadata.get("usuario_id"))
         source_fingerprint = self._safe_str(metadata.get("source_fingerprint"))
         if not source_fingerprint:
-            source_fingerprint = hashlib.sha256(text.encode("utf-8")).hexdigest()[:24]
+            # Avoid cross-tenant collisions when CanonDock deduplicates by fingerprint.
+            tenant_part = self._safe_str(metadata.get("tenant_id")) or "unknown_tenant"
+            project_part = self._safe_str(metadata.get("project_id")) or "unknown_project"
+            raw = f"{tenant_part}|{project_part}|{text}"
+            source_fingerprint = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
 
         base_payload: dict[str, Any] = {
             "title": payload.title or f"RAG canonical ingest {now_iso}",
