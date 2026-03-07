@@ -2,11 +2,37 @@ from __future__ import annotations
 
 import re
 from difflib import SequenceMatcher
+from typing import Any
 
 from app.config.settings import Settings
 from app.models.schemas import SourceChunk
 
 TOKEN_RE = re.compile(r"[a-zA-Z0-9_]+")
+FACTOID_HINTS = {
+    "cual",
+    "cuál",
+    "quien",
+    "quién",
+    "cuando",
+    "cuándo",
+    "donde",
+    "dónde",
+    "id",
+    "version",
+    "última",
+    "ultima",
+    "latest",
+}
+EXPLORATORY_HINTS = {
+    "explica",
+    "explicame",
+    "resume",
+    "resumen",
+    "contexto",
+    "overview",
+    "analiza",
+    "comparar",
+}
 
 
 class RerankerService:
@@ -20,7 +46,7 @@ class RerankerService:
         adaptive = base + (query_factor * 2)
         return min(max(adaptive, self._settings.rerank_candidate_min), self._settings.rerank_candidate_max)
 
-    def rerank(self, question: str, chunks: list[SourceChunk], final_k: int) -> list[SourceChunk]:
+    def rerank(self, question: str, chunks: list[SourceChunk], final_k: int, filters: dict[str, Any] | None = None) -> list[SourceChunk]:
         if not chunks:
             return []
         if len(chunks) == 1:
@@ -30,7 +56,7 @@ class RerankerService:
             return [only]
 
         q_tokens = set(self._tokenize(question))
-        sem_w, lex_w, seq_w = self._effective_weights(token_count=len(q_tokens))
+        sem_w, lex_w, seq_w, lexical_penalty = self._effective_profile(question=question, token_count=len(q_tokens), filters=filters or {})
         raw_scores = [float(c.score) for c in chunks]
         min_s = min(raw_scores)
         max_s = max(raw_scores)
@@ -48,7 +74,7 @@ class RerankerService:
             )
             # Penalize semantic-only hits when there is no lexical evidence for focused queries.
             if lexical == 0.0 and len(q_tokens) >= 3:
-                rerank_score *= 0.85
+                rerank_score *= lexical_penalty
             chunk.semantic_score = float(chunk.score)
             chunk.rerank_score = float(rerank_score)
             chunk.score = float(rerank_score)
@@ -80,3 +106,24 @@ class RerankerService:
             self._settings.rerank_lexical_weight,
             self._settings.rerank_sequence_weight,
         )
+
+    def _effective_profile(self, question: str, token_count: int, filters: dict[str, Any]) -> tuple[float, float, float, float]:
+        base_sem, base_lex, base_seq = self._effective_weights(token_count=token_count)
+        q_tokens = set(self._tokenize(question))
+        strong_filter_count = sum(
+            1
+            for key, value in filters.items()
+            if value not in (None, "", [], {}) and key in {"project_id", "tipo_documento", "doc_type", "fecha", "date", "version", "version_id", "document_id"}
+        )
+        is_factoid = bool(q_tokens.intersection(FACTOID_HINTS)) or question.strip().endswith("?")
+        is_exploratory = bool(q_tokens.intersection(EXPLORATORY_HINTS))
+
+        if is_factoid or strong_filter_count >= 2:
+            # More precision-oriented.
+            sem, lex, seq = 0.45, 0.45, 0.10
+            return sem, lex, seq, 0.75
+        if is_exploratory:
+            # More semantic breadth for open-ended requests.
+            sem, lex, seq = 0.70, 0.20, 0.10
+            return sem, lex, seq, 0.9
+        return base_sem, base_lex, base_seq, 0.85

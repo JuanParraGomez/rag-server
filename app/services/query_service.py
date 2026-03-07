@@ -31,7 +31,7 @@ class QueryService:
             for node in nodes
         ]
         if self._settings.rerank_enabled:
-            sources = self._reranker.rerank(question=question, chunks=sources, final_k=top_k)
+            sources = self._reranker.rerank(question=question, chunks=sources, final_k=top_k, filters=effective_filters)
         else:
             sources = sources[:top_k]
 
