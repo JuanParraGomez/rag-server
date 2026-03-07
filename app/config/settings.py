@@ -30,6 +30,13 @@ class Settings(BaseSettings):
 
     default_top_k: int = Field(default=5)
     max_list_points_scan: int = Field(default=10000)
+    rerank_enabled: bool = Field(default=True)
+    rerank_candidate_min: int = Field(default=24)
+    rerank_candidate_max: int = Field(default=120)
+    rerank_candidate_multiplier: int = Field(default=6)
+    rerank_semantic_weight: float = Field(default=0.65)
+    rerank_lexical_weight: float = Field(default=0.3)
+    rerank_sequence_weight: float = Field(default=0.05)
     canondock_api_base_url: str = Field(default="http://127.0.0.1:8020")
     canondock_service_token: str | None = Field(default=None)
     canondock_timeout_seconds: float = Field(default=15.0)

@@ -7,6 +7,7 @@ from app.services.canonical_ingestion_service import CanonicalIngestionService
 from app.services.canondock_client import CanonDockClient
 from app.services.document_service import DocumentService
 from app.services.query_service import QueryService
+from app.services.reranker_service import RerankerService
 from app.vector_store.qdrant_adapter import QdrantAdapter
 
 
@@ -36,7 +37,8 @@ def get_document_service() -> DocumentService:
 @lru_cache(maxsize=1)
 def get_query_service() -> QueryService:
     vector_store = get_vector_store_adapter()
-    return QueryService(vector_store=vector_store)
+    settings = get_settings()
+    return QueryService(vector_store=vector_store, reranker=RerankerService(settings), settings=settings)
 
 
 @lru_cache(maxsize=1)

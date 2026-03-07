@@ -36,6 +36,8 @@ class QueryRequest(BaseModel):
 class SourceChunk(BaseModel):
     chunk_id: str
     score: float
+    semantic_score: float | None = None
+    rerank_score: float | None = None
     text: str
     metadata: dict[str, Any]
 
