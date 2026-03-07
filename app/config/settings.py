@@ -13,12 +13,14 @@ class Settings(BaseSettings):
     api_host: str = Field(default="0.0.0.0")
     api_port: int = Field(default=8000)
 
+    qdrant_url: str | None = Field(default=None)
+    qdrant_path: str | None = Field(default=None)
     qdrant_host: str = Field(default="qdrant")
     qdrant_port: int = Field(default=6333)
     qdrant_collection: str = Field(default="documents")
     qdrant_api_key: str | None = Field(default=None)
 
-    embedding_provider: Literal["openai", "huggingface"] = Field(default="openai")
+    embedding_provider: Literal["openai"] = Field(default="openai")
     embedding_model_name: str = Field(default="text-embedding-3-small")
     embedding_dimension: int = Field(default=1536)
     openai_api_key: str | None = Field(default=None)
@@ -28,6 +30,9 @@ class Settings(BaseSettings):
 
     default_top_k: int = Field(default=5)
     max_list_points_scan: int = Field(default=10000)
+    canondock_api_base_url: str = Field(default="http://127.0.0.1:8020")
+    canondock_service_token: str | None = Field(default=None)
+    canondock_timeout_seconds: float = Field(default=15.0)
 
     model_config = SettingsConfigDict(
         env_file=".env",

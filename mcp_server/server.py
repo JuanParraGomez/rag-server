@@ -46,6 +46,60 @@ def rag_upload_text(text: str, tenant_id: str, metadata: dict[str, Any] | None =
 
 
 @mcp.tool()
+def rag_ingest_text(
+    text: str,
+    tenant_id: str,
+    title: str | None = None,
+    metadata: dict[str, Any] | None = None,
+    tags: list[str] | None = None,
+    memory: dict[str, Any] | None = None,
+    canonical_document_id: str | None = None,
+) -> dict[str, Any]:
+    """Canonical ingest: persists in CanonDock first, then indexes in RAG."""
+    payload = {
+        "content_type": "text",
+        "text": text,
+        "title": title,
+        "metadata": {**(metadata or {}), "tenant_id": tenant_id},
+        "tags": tags or [],
+        "memory": memory,
+        "canonical_document_id": canonical_document_id,
+    }
+    with _client() as client:
+        response = client.post(f"{RAG_API_BASE_URL}/ingest/canonical", json=payload)
+        response.raise_for_status()
+        return response.json()
+
+
+@mcp.tool()
+def rag_ingest_file(
+    file_name: str,
+    file_base64: str,
+    tenant_id: str,
+    title: str | None = None,
+    metadata: dict[str, Any] | None = None,
+    tags: list[str] | None = None,
+    memory: dict[str, Any] | None = None,
+    canonical_document_id: str | None = None,
+) -> dict[str, Any]:
+    """Canonical file ingest: file bytes as base64, CanonDock-first orchestration."""
+    payload = {
+        "content_type": "file",
+        "file_name": file_name,
+        "file_base64": file_base64,
+        "title": title,
+        "metadata": {**(metadata or {}), "tenant_id": tenant_id},
+        "tags": tags or [],
+        "memory": memory,
+        "canonical_document_id": canonical_document_id,
+    }
+    with _client() as client:
+        response = client.post(f"{RAG_API_BASE_URL}/ingest/canonical", json=payload)
+        response.raise_for_status()
+        return response.json()
+
+
+@mcp.tool()
 def rag_query(question: str, tenant_id: str, filters: dict[str, Any] | None = None, top_k: int = 5) -> dict[str, Any]:
     """Runs semantic query with tenant isolation and optional metadata filters."""
     payload = {
@@ -56,6 +110,70 @@ def rag_query(question: str, tenant_id: str, filters: dict[str, Any] | None = No
     }
     with _client() as client:
         response = client.post(f"{RAG_API_BASE_URL}/query", json=payload)
+        response.raise_for_status()
+        return response.json()
+
+
+@mcp.tool()
+def rag_query_with_filters(
+    question: str,
+    tenant_id: str,
+    filters: dict[str, Any] | None = None,
+    top_k: int = 5,
+    include_context: bool = True,
+    memory_limit: int = 10,
+) -> dict[str, Any]:
+    """Query with metadata filters and optional CanonDock context enrichment."""
+    payload = {
+        "question": question,
+        "tenant_id": tenant_id,
+        "filters": filters or {},
+        "top_k": top_k,
+        "include_context": include_context,
+        "memory_limit": memory_limit,
+    }
+    with _client() as client:
+        response = client.post(f"{RAG_API_BASE_URL}/query/with-filters", json=payload)
+        response.raise_for_status()
+        return response.json()
+
+
+@mcp.tool()
+def rag_get_document_context(
+    question: str,
+    tenant_id: str,
+    filters: dict[str, Any] | None = None,
+    top_k: int = 5,
+    memory_limit: int = 10,
+) -> dict[str, Any]:
+    """Returns retrieval answer plus CanonDock versions/memories for matched documents."""
+    payload = {
+        "question": question,
+        "tenant_id": tenant_id,
+        "filters": filters or {},
+        "top_k": top_k,
+        "include_context": True,
+        "memory_limit": memory_limit,
+    }
+    with _client() as client:
+        response = client.post(f"{RAG_API_BASE_URL}/document-context", json=payload)
+        response.raise_for_status()
+        return response.json()
+
+
+@mcp.tool()
+def rag_sync_document(document_id: str, tenant_id: str, text: str, metadata: dict[str, Any] | None = None, title: str | None = None) -> dict[str, Any]:
+    """Manual sync helper: re-indexes text for an existing CanonDock document_id."""
+    payload = {
+        "content_type": "text",
+        "text": text,
+        "title": title,
+        "metadata": {**(metadata or {}), "tenant_id": tenant_id},
+        "tags": [],
+        "canonical_document_id": document_id,
+    }
+    with _client() as client:
+        response = client.post(f"{RAG_API_BASE_URL}/ingest/canonical", json=payload)
         response.raise_for_status()
         return response.json()
 

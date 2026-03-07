@@ -2,16 +2,26 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 
-from app.dependencies import get_document_service, get_query_service, get_vector_store_adapter
+from app.dependencies import (
+    get_canonical_ingestion_service,
+    get_document_service,
+    get_query_service,
+    get_vector_store_adapter,
+)
 from app.models.schemas import (
+    CanonicalIngestRequest,
+    CanonicalIngestResponse,
     DeleteDocumentResponse,
+    DocumentContextResponse,
     DocumentListResponse,
     HealthResponse,
     QueryRequest,
     QueryResponse,
+    QueryWithFiltersRequest,
     UploadResponse,
     UploadTextRequest,
 )
+from app.services.canonical_ingestion_service import CanonicalIngestionService
 from app.services.document_service import DocumentService
 from app.services.query_service import QueryService
 from app.vector_store.base import VectorStoreAdapter
@@ -56,6 +66,51 @@ def query(
         tenant_id=payload.tenant_id,
         filters=payload.filters,
         top_k=payload.top_k,
+    )
+
+
+@router.post("/query/with-filters", response_model=DocumentContextResponse)
+def query_with_filters(
+    payload: QueryWithFiltersRequest,
+    canonical_service: CanonicalIngestionService = Depends(get_canonical_ingestion_service),
+    query_service: QueryService = Depends(get_query_service),
+) -> DocumentContextResponse:
+    if payload.include_context:
+        return canonical_service.get_document_context(
+            tenant_id=payload.tenant_id,
+            question=payload.question,
+            filters=payload.filters,
+            top_k=payload.top_k,
+            memory_limit=payload.memory_limit,
+        )
+    query_result = query_service.query(
+        question=payload.question,
+        tenant_id=payload.tenant_id,
+        filters=payload.filters,
+        top_k=payload.top_k,
+    )
+    return DocumentContextResponse(answer=query_result.answer, sources=query_result.sources, documents=[])
+
+
+@router.post("/ingest/canonical", response_model=CanonicalIngestResponse)
+def ingest_canonical(
+    payload: CanonicalIngestRequest,
+    canonical_service: CanonicalIngestionService = Depends(get_canonical_ingestion_service),
+) -> CanonicalIngestResponse:
+    return canonical_service.ingest(payload)
+
+
+@router.post("/document-context", response_model=DocumentContextResponse)
+def document_context(
+    payload: QueryWithFiltersRequest,
+    canonical_service: CanonicalIngestionService = Depends(get_canonical_ingestion_service),
+) -> DocumentContextResponse:
+    return canonical_service.get_document_context(
+        tenant_id=payload.tenant_id,
+        question=payload.question,
+        filters=payload.filters,
+        top_k=payload.top_k,
+        memory_limit=payload.memory_limit,
     )
 
 
